@@ -1,0 +1,668 @@
+{
+  "start_speaker": "agent",
+  "start_node_id": "node_greeting",
+  "model_choice": {
+    "type": "cascading",
+    "model": "gpt-4.1",
+    "high_priority": false
+  },
+  "model_temperature": 0,
+  "tool_call_strict_mode": true,
+  "global_prompt": "Your name is Erik. You are an inbound customer service agent for Elite Portfolio Management.\nBe professional, empathetic, concise, calm, and conversational.\n\nIdentity and privacy rules:\n- Never reveal account details, balance, creditor name, or payment options before identity is verified and compliance has played.\n- Name and date of birth may be spoken for identity verification only.\n- Never read SSN digits aloud.\n- Never read back or confirm SSN, last 4 of SSN, email address, or full phone number.\n- Do not discuss the debt with anyone other than the verified account holder.\n\nCompliance rules:\n- If the caller says stop calling, do not call, cease and desist, or similar, acknowledge respectfully and stop collection activity.\n- If the caller disputes the debt or says it is not theirs, acknowledge the dispute, note it with the dispute tool, and do not continue collection efforts.\n- CRITICAL ATTORNEY OVERRIDE: If the caller mentions an attorney, lawyer, or legal representation at ANY point in the call — even before identity is verified — immediately say: \"I understand. Let me transfer you to a specialist who can help.\" Then transfer to specialist. Do NOT ask for identity information, name, date of birth, or any other details after this point. This rule takes absolute priority over all other instructions.\n- Never threaten, harass, or use abusive language.\n- Never say garnish wages, sue you, legal action, report to credit bureau, arrest, jail, or seize property.\n\nPayment rules:\n- Present resolution options in the configured waterfall order and do not skip ahead unless the current option is declined.\n- Never go below the settlement floor amount.\n- Never exceed payment caps.\n- Never calculate percentages aloud.\n- Always speak dollar amounts naturally without saying \"dot\" or reading decimals for whole numbers.\n- Card numbers must be collected by keypad only. Never let the caller say card numbers aloud.\n\nTransfer rules:\n- If the caller asks for a human, first say: \"I am fully equipped to help you with your file. Could you let me know what you would like to discuss? If I cannot help you I will transfer you right away.\"\n- If they insist, transfer them.\n\nInformation boundary:\n- If the caller asks about office hours, location, number of employees, company history, website, or any other company detail that is NOT provided in this prompt, say: \"That's not something I have in front of me, but I can transfer you to someone who can help with that.\" Do NOT fabricate office hours, addresses, or any company information.\n- Never fabricate account data. If data is missing, say: \"That's not in the file I have.\"",
+  "default_dynamic_variables": {
+    "birthdate": "",
+    "charge_off_date": "",
+    "city": "",
+    "cease_desist": "false",
+    "dob_raw": "",
+    "ssn": "",
+    "file_number": "",
+    "payment_message": "",
+    "bank": "",
+    "original_creditor": "",
+    "balance": "",
+    "now": "",
+    "bank_name": "",
+    "current_balance": "",
+    "portfolio_id": "",
+    "account_found": "false",
+    "state": "",
+    "first_name": "",
+    "settlement_floor_amount": "",
+    "email": "",
+    "debtor_name": "",
+    "zip": "",
+    "payment_decline_reason": "",
+    "payment_success": "",
+    "settlement_open_amount": "",
+    "last_name": "",
+    "elite_id": "",
+    "full_name": "",
+    "account_id": "",
+    "has_active_dispute": "false",
+    "phone": "",
+    "billing_address_on_file": "",
+    "six_payment_amount": "",
+    "payment_transaction_id": "",
+    "debtor_dob": "",
+    "do_not_call": "false",
+    "status": ""
+  },
+  "tools": [
+    {
+      "type": "custom",
+      "tool_id": "tool_auto_lookup",
+      "name": "autoLookupByPhone",
+      "description": "Look up caller account by phone number.",
+      "url": "https://crm.eliteportmgmt.com/api/voice/tools/lookup-account",
+      "method": "POST",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "phone_number": {
+            "type": "string",
+            "description": "The caller phone number to look up."
+          }
+        },
+        "required": ["phone_number"]
+      },
+      "response_variables": {
+        "account_found": "found",
+        "full_name": "full_name",
+        "first_name": "first_name",
+        "last_name": "last_name",
+        "birthdate": "dob",
+        "debtor_name": "full_name",
+        "debtor_dob": "dob",
+        "account_id": "account_id",
+        "elite_id": "elite_id",
+        "current_balance": "current_balance",
+        "balance": "current_balance",
+        "original_creditor": "original_creditor",
+        "bank_name": "bank_name",
+        "bank": "bank_name",
+        "charge_off_date": "chargeoff_date",
+        "settlement_open_amount": "settlement_open_amount",
+        "settlement_floor_amount": "settlement_floor_amount",
+        "six_payment_amount": "six_payment_amount",
+        "billing_address_on_file": "billing_address_on_file",
+        "city": "city",
+        "state": "state",
+        "zip": "zip",
+        "email": "email",
+        "cease_desist": "cease_desist",
+        "has_active_dispute": "has_active_dispute",
+        "status": "status",
+        "phone": "phone",
+        "file_number": "original_account_number",
+        "portfolio_id": "portfolio_id"
+      },
+      "speak_during_execution": true,
+      "speak_after_execution": true,
+      "execution_message_description": "One moment while I pull up your account."
+    },
+    {
+      "type": "custom",
+      "tool_id": "tool_find_account",
+      "name": "findAccountByPhone",
+      "description": "Look up account by name and date of birth.",
+      "url": "https://crm.eliteportmgmt.com/api/voice/tools/lookup-account",
+      "method": "POST",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "full_name": {"type": "string", "description": "Caller's full name."},
+          "dob": {"type": "string", "description": "Caller's date of birth."}
+        },
+        "required": ["full_name", "dob"]
+      },
+      "response_variables": {
+        "account_found": "found",
+        "full_name": "full_name",
+        "first_name": "first_name",
+        "last_name": "last_name",
+        "birthdate": "dob",
+        "debtor_name": "full_name",
+        "debtor_dob": "dob",
+        "account_id": "account_id",
+        "elite_id": "elite_id",
+        "current_balance": "current_balance",
+        "balance": "current_balance",
+        "original_creditor": "original_creditor",
+        "bank_name": "bank_name",
+        "bank": "bank_name",
+        "charge_off_date": "chargeoff_date",
+        "settlement_open_amount": "settlement_open_amount",
+        "settlement_floor_amount": "settlement_floor_amount",
+        "six_payment_amount": "six_payment_amount",
+        "billing_address_on_file": "billing_address_on_file",
+        "city": "city",
+        "state": "state",
+        "zip": "zip",
+        "email": "email",
+        "cease_desist": "cease_desist",
+        "has_active_dispute": "has_active_dispute",
+        "status": "status",
+        "phone": "phone",
+        "file_number": "elite_id",
+        "portfolio_id": "portfolio_id",
+        "do_not_call": "do_not_call"
+      },
+      "speak_during_execution": true,
+      "speak_after_execution": true,
+      "execution_message_description": "One moment while I look that up."
+    },
+    {
+      "type": "custom",
+      "tool_id": "tool_deliver_compliance",
+      "name": "deliverCompliance",
+      "description": "Log that the Mini Miranda compliance disclosure was delivered to the caller.",
+      "url": "https://crm.eliteportmgmt.com/api/voice/tools/log-compliance",
+      "method": "POST",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "event": {"type": "string", "description": "Always pass 'mini_miranda_delivered'."},
+          "account_id": {"type": "string", "description": "The account ID."},
+          "execution_message": {"type": "string", "description": "Always pass the exact Mini Miranda text: 'This call may be recorded for quality and compliance purposes. This is a communication from a debt collector. This is an attempt to collect a debt, and any information obtained will be used for that purpose.'"}
+        },
+        "required": ["event", "execution_message"]
+      },
+      "speak_during_execution": true,
+      "speak_after_execution": false,
+      "execution_message_description": "This call may be recorded for quality and compliance purposes. This is a communication from a debt collector. This is an attempt to collect a debt, and any information obtained will be used for that purpose."
+    },
+    {
+      "type": "custom",
+      "tool_id": "tool_process_payment",
+      "name": "processLivePayment",
+      "description": "Process an immediate live card charge. Use only for one-time full balance or settlement payments.",
+      "url": "https://crm.eliteportmgmt.com/api/voice/tools/process-payment",
+      "method": "POST",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "account_id": {"type": "string"},
+          "amount": {"type": "number", "description": "The exact dollar amount to charge today."},
+          "payment_type": {"type": "string", "description": "Use 'full_balance' for full balance or 'settlement' for settlement.", "enum": ["full_balance", "settlement"]},
+          "billing_address": {"type": "string"},
+          "billing_street": {"type": "string", "description": "Street line for AVS."},
+          "billing_city": {"type": "string"},
+          "billing_state": {"type": "string"},
+          "billing_zip": {"type": "string"},
+          "address_on_file_confirmed": {"type": "boolean", "description": "True only if a full street address was already on file and the caller confirmed it unchanged."},
+          "cardholder_name": {"type": "string", "description": "Use the verified account holder name."},
+          "elite_id": {"type": "string"},
+          "card_number": {"type": "string"},
+          "exp_month": {"type": "string"},
+          "exp_year": {"type": "string"},
+          "cvv": {"type": "string"}
+        },
+        "required": ["account_id", "amount", "payment_type", "billing_address", "billing_street", "billing_city", "billing_state", "billing_zip", "address_on_file_confirmed", "cardholder_name", "elite_id", "card_number", "exp_month", "exp_year", "cvv"]
+      },
+      "response_variables": {
+        "payment_success": "success",
+        "payment_message": "message",
+        "payment_decline_reason": "decline_reason",
+        "payment_transaction_id": "transaction_id"
+      },
+      "speak_during_execution": true,
+      "speak_after_execution": true
+    },
+    {
+      "type": "custom",
+      "tool_id": "tool_tokenize_card",
+      "name": "tokenizeCard",
+      "description": "Tokenize card securely for multi-payment arrangements.",
+      "url": "https://crm.eliteportmgmt.com/api/voice/tools/tokenize-card",
+      "method": "POST",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "account_id": {"type": "string"},
+          "billing_address": {"type": "string"}
+        },
+        "required": ["account_id"]
+      },
+      "speak_during_execution": true,
+      "speak_after_execution": true
+    },
+    {
+      "type": "custom",
+      "tool_id": "tool_confirm_arrangement",
+      "name": "confirmPaymentArrangement",
+      "description": "Confirm a multi-payment arrangement with tokenized card.",
+      "url": "https://crm.eliteportmgmt.com/api/voice/tools/confirm-arrangement",
+      "method": "POST",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "account_id": {"type": "string"},
+          "tokenized_card_id": {"type": "string"},
+          "first_payment_date": {"type": "string"},
+          "first_payment_amount": {"type": "string"},
+          "recurring_payment_amount": {"type": "string"},
+          "recurring_day_of_month": {"type": "string"}
+        },
+        "required": ["account_id", "tokenized_card_id", "first_payment_date", "first_payment_amount"]
+      },
+      "speak_during_execution": true,
+      "speak_after_execution": true
+    },
+    {
+      "type": "custom",
+      "tool_id": "tool_log_dispute",
+      "name": "logDispute",
+      "description": "Log a dispute declaration from the caller.",
+      "url": "https://crm.eliteportmgmt.com/api/voice/tools/log-dispute",
+      "method": "POST",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "account_id": {"type": "string"},
+          "dispute_reason": {"type": "string"}
+        },
+        "required": ["account_id"]
+      },
+      "speak_during_execution": true,
+      "speak_after_execution": true
+    },
+    {
+      "type": "custom",
+      "tool_id": "tool_log_cnd",
+      "name": "logCeaseAndDesist",
+      "description": "Log a cease and desist request.",
+      "url": "https://crm.eliteportmgmt.com/api/voice/tools/log-cnd",
+      "method": "POST",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "account_id": {"type": "string"},
+          "note": {"type": "string"}
+        },
+        "required": ["account_id"]
+      },
+      "speak_during_execution": true,
+      "speak_after_execution": true
+    }
+  ],
+  "nodes": [
+    {
+      "id": "node_greeting",
+      "type": "conversation",
+      "name": "Greeting",
+      "instruction": {
+        "type": "static_text",
+        "text": "Thank you for calling Elite Portfolio Management, my name is Erik - how can I help you today?"
+      },
+      "always_edge": {
+        "id": "edge_greeting_to_lookup",
+        "transition_condition": {
+          "type": "prompt",
+          "prompt": "Always"
+        },
+        "destination_node_id": "node_auto_lookup"
+      },
+      "edges": [],
+      "display_position": {"x": 0, "y": 0}
+    },
+    {
+      "id": "node_auto_lookup",
+      "type": "function",
+      "name": "Auto Lookup by Phone",
+      "tool_id": "tool_auto_lookup",
+      "tool_type": "local",
+      "wait_for_result": true,
+      "speak_during_execution": true,
+      "instruction": {
+        "type": "prompt",
+        "text": "Look up the caller's account using their phone number. Pass the caller's phone number as the phone_number parameter."
+      },
+      "edges": [],
+      "else_edge": {
+        "id": "edge_lookup_to_check",
+        "transition_condition": {
+          "type": "prompt",
+          "prompt": "Else"
+        },
+        "destination_node_id": "node_check_account"
+      },
+      "display_position": {"x": 300, "y": 0}
+    },
+    {
+      "id": "node_check_account",
+      "type": "branch",
+      "name": "Check Account Status",
+      "edges": [
+        {
+          "id": "edge_check_cease",
+          "transition_condition": {
+            "type": "equation",
+            "equations": [{"left": "{{cease_desist}}", "operator": "==", "right": "true"}],
+            "operator": "&&"
+          },
+          "destination_node_id": "node_transfer_specialist"
+        },
+        {
+          "id": "edge_check_dispute",
+          "transition_condition": {
+            "type": "equation",
+            "equations": [{"left": "{{has_active_dispute}}", "operator": "==", "right": "true"}],
+            "operator": "&&"
+          },
+          "destination_node_id": "node_transfer_specialist"
+        },
+        {
+          "id": "edge_check_not_found",
+          "transition_condition": {
+            "type": "equation",
+            "equations": [{"left": "{{account_found}}", "operator": "==", "right": "false"}],
+            "operator": "&&"
+          },
+          "destination_node_id": "node_manual_lookup"
+        }
+      ],
+      "else_edge": {
+        "id": "edge_check_to_verify",
+        "transition_condition": {
+          "type": "prompt",
+          "prompt": "Else"
+        },
+        "destination_node_id": "node_verify_identity"
+      },
+      "display_position": {"x": 600, "y": 0}
+    },
+    {
+      "id": "node_verify_identity",
+      "type": "conversation",
+      "name": "Verify Identity",
+      "instruction": {
+        "type": "prompt",
+        "text": "Verify the caller's identity using the name and date of birth from the account lookup.\n\nSay: \"I can go into more detail for you, I just have to confirm I am speaking to {{full_name}} with a birth date of {{birthdate}}. Is that correct?\"\n\nUse the ACTUAL name and date of birth from the lookup result. Do not say placeholders.\nWait for a clear yes or correct.\nIf the response is vague, ask again.\nIf they say a different name, say: \"My apologies, this number was given to me for the account holder on file. May I ask who I have reached?\"\nIf verification fails twice, transfer to a specialist.\nIf the caller mentions an attorney or lawyer at any point, immediately transition to transfer."
+      },
+      "edges": [
+        {
+          "id": "edge_verify_confirmed",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "The caller confirmed their identity — they said yes, correct, or affirmed they are the account holder."
+          },
+          "destination_node_id": "node_deliver_compliance"
+        },
+        {
+          "id": "edge_verify_attorney",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "The caller mentioned an attorney, lawyer, or legal representation."
+          },
+          "destination_node_id": "node_transfer_attorney"
+        },
+        {
+          "id": "edge_verify_failed",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "The caller denied being the account holder, gave a different name, or identity verification failed after two attempts."
+          },
+          "destination_node_id": "node_manual_lookup"
+        }
+      ],
+      "display_position": {"x": 900, "y": 0}
+    },
+    {
+      "id": "node_manual_lookup",
+      "type": "subagent",
+      "name": "Manual Account Lookup",
+      "instruction": {
+        "type": "prompt",
+        "text": "The pre-loaded account data was missing, phone lookup failed, or identity could not be verified.\n\nFirst ask for the caller's full name and date of birth.\nOnce you have both, call findAccountByPhone with the full_name and dob.\n\nIf the tool returns an account match:\n  Check if cease_desist is true or has_active_dispute is true. If so, say: \"I need to connect you with a specialist who can assist further.\" and transition to transfer.\n  Otherwise, verify identity using the returned name and date of birth.\n  If identity is confirmed:\n    Say this EXACT text out loud: \"This call may be recorded for quality and compliance purposes. This is a communication from a debt collector. This is an attempt to collect a debt, and any information obtained will be used for that purpose.\"\n    Call deliverCompliance with event 'mini_miranda_delivered' and the account_id.\n    Then transition to opening frame.\n\nIf the account is not found after two attempts, transition to transfer specialist.\n\nDo not guess or invent account details.\nDo not discuss creditor, balance, or payment options before identity verification and compliance."
+      },
+      "tool_ids": ["tool_find_account", "tool_deliver_compliance"],
+      "edges": [
+        {
+          "id": "edge_manual_success",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "Account was found, identity was verified, and compliance (Mini Miranda) was successfully delivered."
+          },
+          "destination_node_id": "node_opening_frame"
+        },
+        {
+          "id": "edge_manual_restrictions",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "Account has cease and desist flag, active dispute, or needs to be transferred to a specialist."
+          },
+          "destination_node_id": "node_transfer_specialist"
+        },
+        {
+          "id": "edge_manual_attorney",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "The caller mentioned an attorney, lawyer, or legal representation."
+          },
+          "destination_node_id": "node_transfer_attorney"
+        },
+        {
+          "id": "edge_manual_not_found",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "Account could not be found after attempts, or identity verification failed repeatedly."
+          },
+          "destination_node_id": "node_transfer_specialist"
+        }
+      ],
+      "display_position": {"x": 900, "y": 400}
+    },
+    {
+      "id": "node_deliver_compliance",
+      "type": "function",
+      "name": "Deliver Compliance",
+      "tool_id": "tool_deliver_compliance",
+      "tool_type": "local",
+      "wait_for_result": true,
+      "speak_during_execution": true,
+      "instruction": {
+        "type": "prompt",
+        "text": "Say this EXACT text out loud: \"This call may be recorded for quality and compliance purposes. This is a communication from a debt collector. This is an attempt to collect a debt, and any information obtained will be used for that purpose.\"\n\nThen call deliverCompliance with event='mini_miranda_delivered', the account_id from {{account_id}}, and execution_message set to the exact Mini Miranda text above."
+      },
+      "edges": [],
+      "else_edge": {
+        "id": "edge_compliance_to_opening",
+        "transition_condition": {
+          "type": "prompt",
+          "prompt": "Else"
+        },
+        "destination_node_id": "node_opening_frame"
+      },
+      "display_position": {"x": 1200, "y": 0}
+    },
+    {
+      "id": "node_opening_frame",
+      "type": "conversation",
+      "name": "Opening Frame",
+      "instruction": {
+        "type": "prompt",
+        "text": "Disclose that the office has been retained to review a returned transaction for the verified account.\nIf {{bank}} is available and not empty, include the bank name naturally.\nIf {{original_creditor}} is available and not empty, include it naturally.\nIf {{charge_off_date}} is available and not empty, mention the date naturally in speech. Do not read any punctuation marks aloud. Say dates as spoken words only.\nDo not fabricate missing fields. If a field is empty, skip it.\n\nThen ask exactly: \"Would you care to explain what happened?\"\nStop and wait for the caller to respond.\n\nAfter they respond:\n  Acknowledge briefly.\n  Then disclose the current balance using {{balance}} if available, otherwise {{current_balance}}.\n  Then ask whether they would like to review options to resolve the account.\n  Once they are ready, transition to the waterfall."
+      },
+      "edges": [
+        {
+          "id": "edge_opening_to_waterfall",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "The opening frame is complete — the caller has responded to the opening question and is ready to hear resolution options."
+          },
+          "destination_node_id": "node_waterfall"
+        },
+        {
+          "id": "edge_opening_attorney",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "The caller mentioned an attorney, lawyer, or legal representation."
+          },
+          "destination_node_id": "node_transfer_attorney"
+        }
+      ],
+      "display_position": {"x": 1500, "y": 0}
+    },
+    {
+      "id": "node_waterfall",
+      "type": "subagent",
+      "name": "Payment Waterfall",
+      "instruction": {
+        "type": "prompt",
+        "text": "Present options in this exact order and do not skip ahead unless the current option is declined.\nIf one option is declined, move to the next.\nDo not number the options out loud. Do not say 'option one', 'option two', '1', or '2'. Present each option conversationally.\n\nStep A: Full balance in one payment using {{balance}} if available, otherwise {{current_balance}}.\n\nStep B: Full balance in 6 monthly payments of {{six_payment_amount}} each. State the terms directly and ask if the first payment can be made today. For example: 'We can split that into 6 monthly payments of {{six_payment_amount}}. Can we get the first payment started today?' Do not ask the caller how many payments they want or let them design the plan. The terms are fixed at 6 payments of {{six_payment_amount}}.\n\nStep C: Settlement in one payment using {{settlement_open_amount}} and {{settlement_floor_amount}} when available. Emphasize how much money the caller saves compared to the full balance.\n\nStep D: Settlement in 3 monthly payments. Take {{settlement_open_amount}} and divide by 3 for the monthly amount. State the terms directly and ask if the first payment can be made today. Do not offer more than 3 settlement payments. Do not ask the caller to choose the number of payments.\n\nStep E: Hardship plan on the full balance with monthly payments only and these caps:\n- Under $750: 12 payments max, minimum $65 per month\n- $750-$1,999: 18 payments max, minimum $115 per month\n- $2,000-$3,499: 24 payments max, minimum $150 per month\n- $3,500-$4,999: 27 payments max, minimum $190 per month\n- $5,000+: 30 payments max, minimum monthly amount is {{balance}} or {{current_balance}} divided by 30, rounded up to the nearest $10, with an absolute floor of $200 per month\n\nHard rules:\n- Never go below settlement_floor_amount\n- Never exceed payment caps\n- Never calculate percentages aloud\n- Always speak dollar amounts as $[number]\n- For ANY multi-payment option (Steps B, D, and E), always ask if the caller can make the first payment today. If they agree, the first payment is today. If they cannot, schedule within 30 days.\n- Stay in control of the call. Present terms confidently. Do not ask the caller to design their own plan or pick payment amounts for Steps A through D.\n\nSpeak the actual dollar amounts from the verified account variables.\nFor settlement in 3 payments or less, keep the total settlement at or above settlement_floor_amount and spread it across no more than 3 payments.\nIf the caller says they cannot pay anything, ask whether they can pay even a small amount today to help lock in a discount.\nFor Step E only:\n- Ask what the caller can pay monthly.\n- Compare their proposed monthly amount to the minimum monthly amount for their balance tier.\n- Never offer more months than the tier maximum.\n- Never offer a monthly amount below the tier minimum.\n- If the caller asks for more time than allowed, state the maximum available term for their tier.\n- If the caller proposes too little, counter with the lowest compliant monthly amount and the longest compliant term.\n\nIf the caller explicitly disputes the debt, call logDispute and then transition to transfer.\nIf the caller requests cease and desist or states they are represented by an attorney, call logCeaseAndDesist and then transition to transfer.\nIf the caller accepts ANY option (Step A, B, C, D, or E), transition to payment capture.\nIf the caller refuses all options and wants to end the call, transition to end."
+      },
+      "tool_ids": ["tool_log_dispute", "tool_log_cnd"],
+      "edges": [
+        {
+          "id": "edge_waterfall_accepted",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "The caller accepted a payment or arrangement option and is ready to proceed with payment."
+          },
+          "destination_node_id": "node_payment_capture"
+        },
+        {
+          "id": "edge_waterfall_dispute",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "The caller declared a dispute about the debt. The logDispute tool has been called."
+          },
+          "destination_node_id": "node_transfer_specialist"
+        },
+        {
+          "id": "edge_waterfall_cnd",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "The caller requested cease and desist, no further contact, or mentioned an attorney. The logCeaseAndDesist tool has been called."
+          },
+          "destination_node_id": "node_transfer_attorney"
+        },
+        {
+          "id": "edge_waterfall_refused",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "The caller refused all payment options and wants to end the call."
+          },
+          "destination_node_id": "node_end_refused"
+        }
+      ],
+      "display_position": {"x": 1800, "y": 0}
+    },
+    {
+      "id": "node_payment_capture",
+      "type": "subagent",
+      "name": "Payment Capture",
+      "instruction": {
+        "type": "prompt",
+        "text": "This state handles ALL payment collection — both one-time payments and multi-payment arrangements.\n\nONE-TIME PAYMENTS (Step A or Step C accepted): Collect card via DTMF, then call processLivePayment to charge immediately.\nMULTI-PAYMENT PLANS (Step B, D, or E accepted): Collect card via DTMF, then call tokenizeCard to save the card, then call confirmPaymentArrangement with the plan details.\n\nDo NOT repeat the plan details or balance. The caller already agreed. Move directly to collecting the billing address and card.\n\nBEFORE TAKING PAYMENT, collect a complete billing address:\nIf billing_address_on_file ({{billing_address_on_file}}) contains a full street address, read it back and ask the caller to confirm.\nIf the caller confirms, use that address and set address_on_file_confirmed to true.\nIf billing_address_on_file is blank, or only city/state/zip are available, say: 'I only have {{city}}, {{state}} {{zip}} on file. What is the street address for this card?'\nWait for the street address. Then confirm the full billing address before moving on.\nIf the caller corrects any part, use the corrected address and set address_on_file_confirmed to false.\nNever treat city/state/zip alone as a complete billing address.\n\nDTMF CAPTURE SEQUENCE:\n- Tell the caller to enter card details by keypad only. Never allow card numbers to be spoken aloud.\n- Ask for only one field at a time and wait silently after each instruction.\n- After each successful keypad entry, briefly acknowledge ('Got it.' or 'Thank you.') and immediately give the next instruction.\n- First say: 'Please enter your 16-digit card number on your keypad followed by the pound sign.'\n- Wait silently. Do not ask for expiration or CVV in the same turn.\n- After card digits are captured, say: 'Now enter the expiration date as six digits using two digits for the month and four digits for the year, followed by the pound sign. For example, April 2030 would be 0 4 2 0 3 0.'\n- Wait silently. Split the keypad entry into exp_month and exp_year.\n- After expiration is captured, ask for CVV only and wait silently.\n- If keypad capture fails twice for a field, offer to transfer to a specialist.\n\nAfter DTMF capture is complete:\n\nFOR ONE-TIME PAYMENT (Step A or Step C):\n- Call processLivePayment with: account_id={{account_id}}, amount (the agreed dollar amount), payment_type ('full_balance' or 'settlement'), full billing address fields, address_on_file_confirmed, cardholder_name (use {{full_name}}), elite_id={{elite_id}}, and the captured card_number, exp_month, exp_year, cvv.\n- If payment_success is true, transition to closing.\n- If payment is declined, explain briefly and offer a second card or return to waterfall.\n\nFOR MULTI-PAYMENT PLAN (Step B, D, or E):\n- Call tokenizeCard with account_id={{account_id}} and billing_address.\n- After tokenizeCard succeeds, call confirmPaymentArrangement with: account_id, tokenized_card_id (from tokenizeCard response), first_payment_date, first_payment_amount, recurring_payment_amount (if applicable), recurring_day_of_month (if applicable).\n- After confirmPaymentArrangement succeeds, transition to closing.\n- If either tool fails, offer to transfer to a specialist."
+      },
+      "tool_ids": ["tool_process_payment", "tool_tokenize_card", "tool_confirm_arrangement"],
+      "edges": [
+        {
+          "id": "edge_payment_success",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "Payment was processed successfully or arrangement was confirmed successfully."
+          },
+          "destination_node_id": "node_closing"
+        },
+        {
+          "id": "edge_payment_retry",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "Payment failed or was declined and the caller wants to hear resolution options again."
+          },
+          "destination_node_id": "node_waterfall"
+        },
+        {
+          "id": "edge_payment_transfer",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "Technical failure processing payment or DTMF capture failed repeatedly. The caller needs to be transferred to a specialist."
+          },
+          "destination_node_id": "node_transfer_specialist"
+        }
+      ],
+      "display_position": {"x": 2100, "y": 0}
+    },
+    {
+      "id": "node_closing",
+      "type": "end",
+      "name": "Closing",
+      "speak_during_execution": true,
+      "instruction": {
+        "type": "static_text",
+        "text": "You're all set. I appreciate you taking the time today."
+      },
+      "display_position": {"x": 2400, "y": 0}
+    },
+    {
+      "id": "node_transfer_specialist",
+      "type": "transfer_call",
+      "name": "Transfer to Specialist",
+      "transfer_destination": {
+        "type": "predefined",
+        "number": "+18333814416"
+      },
+      "transfer_option": {
+        "type": "cold_transfer",
+        "show_transferee_as_caller": false,
+        "enable_bridge_audio_cue": true
+      },
+      "speak_during_execution": true,
+      "instruction": {
+        "type": "prompt",
+        "text": "Say: 'I need to connect you with a specialist who can assist further.' Then transfer the call."
+      },
+      "edge": {
+        "id": "edge_transfer_specialist_failed",
+        "transition_condition": {
+          "type": "prompt",
+          "prompt": "Transfer failed"
+        },
+        "destination_node_id": "node_end_refused"
+      },
+      "display_position": {"x": 600, "y": -400}
+    },
+    {
+      "id": "node_transfer_attorney",
+      "type": "transfer_call",
+      "name": "Transfer - Attorney Mentioned",
+      "transfer_destination": {
+        "type": "predefined",
+        "number": "+18333814416"
+      },
+      "transfer_option": {
+        "type": "cold_transfer",
+        "show_transferee_as_caller": false,
+        "enable_bridge_audio_cue": true
+      },
+      "speak_during_execution": true,
+      "instruction": {
+        "type": "prompt",
+        "text": "Say: 'I understand. Let me transfer you to a specialist who can help.' Then transfer the call immediately. Do NOT ask for any identity information or other details."
+      },
+      "edge": {
+        "id": "edge_transfer_attorney_failed",
+        "transition_condition": {
+          "type": "prompt",
+          "prompt": "Transfer failed"
+        },
+        "destination_node_id": "node_end_refused"
+      },
+      "display_position": {"x": 1200, "y": -400}
+    },
+    {
+      "id": "node_end_refused",
+      "type": "end",
+      "name": "End - All Options Refused",
+      "speak_during_execution": true,
+      "instruction": {
+        "type": "prompt",
+        "text": "The caller has refused all payment options. End the call politely. Thank them for their time and let them know they can call back if they change their mind."
+      },
+      "display_position": {"x": 1800, "y": 400}
+    }
+  ]
+}
