@@ -47,7 +47,8 @@ The waterfall is split into five state-anchored nodes (Step A -> B -> C1 -> C2 -
 ## Files
 
 - `create_conversation_flow.json` - Current deployed flow (v47 structure, 25 nodes)
-- `update_flow_v47.json` - PATCH payload applied in v47 (source of truth for the edits below)
+- `update_flow_v47.json` - PATCH payload applied in v47 (source of truth for the v47 edits)
+- `update_flow_v48.json` - Ready-to-apply payload adding decline-rerun branch (see v48 section; not yet deployed — Retell published-flow lock)
 - `test-results/final_results.json` - Batch test results
 
 ## v47 Changes (Apr 2026)
@@ -62,6 +63,24 @@ Addresses issues observed in v45/v46 test calls:
 6. **Verify Identity** adds a direct-response rule: a "yes" only counts as verification if the agent's immediately preceding utterance contained the full name + DOB question.
 7. **Opening Frame** closes with a direct yes/no question ("Can we take care of the full balance today?") instead of "Let's go over your options", which was causing dead air.
 8. **Global prompt** gains Loop-Breaking, State-Anchoring, and De-escalation rules that forbid the "quickest way" fallback line from being used as a recovery.
+
+## v48 Changes (PENDING DEPLOY)
+
+Adds a branch after compliance so callers whose account lookup returned `status == "decline"` are offered a quick re-run of their last failed payment instead of walking through the full waterfall.
+
+New nodes:
+- `node_post_compliance_branch` (branch) — routes on `{{status}} == "decline"`
+- `node_decline_rerun` (conversation) — "I see your last payment of {{current_balance}} didn't go through. Would you like me to try running that again now?"
+  - YES → `node_payment_capture` (full-balance path)
+  - NO → `node_opening_frame` (fall back to normal waterfall)
+  - dispute / C&D / attorney → standard routes
+
+Redirected edge: `node_deliver_compliance.else_edge` now points to `node_post_compliance_branch` (was `node_opening_frame`). All other verified-identity paths unchanged; Mini-Miranda still delivered before the branch is evaluated.
+
+**Deploy requirement:** Retell's public API blocks PATCH on published flows. To apply `update_flow_v48.json`:
+1. Open the Retell dashboard for `conversation_flow_386d055c83ef` and click "Edit" (creates an unpublished draft).
+2. Run `curl -X PATCH https://api.retellai.com/update-conversation-flow/conversation_flow_386d055c83ef --data-binary @update_flow_v48.json -H "Authorization: Bearer $RETELL_KEY" -H "Content-Type: application/json"`.
+3. Call `publish-agent/agent_cf676ce4e6044c864f4ecd7e4b` to lock and activate.
 
 ## Agent Settings
 
