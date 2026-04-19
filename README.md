@@ -70,12 +70,16 @@ Adds a branch after compliance so callers whose account lookup returned `status 
 
 New nodes:
 - `node_post_compliance_branch` (branch) — routes on `{{status}} == "decline"`
-- `node_decline_rerun` (conversation) — "I see your last payment of {{current_balance}} didn't go through. Would you like me to try running that again now?"
-  - YES → `node_payment_capture` (full-balance path)
+- `node_decline_rerun` (conversation) — "I see your last payment attempt of {{last_payment_amount}} didn't go through. Would you like me to try running that again now?"
+  - YES → `node_payment_capture` (charges exactly `{{last_payment_amount}}`, NOT the full balance)
   - NO → `node_opening_frame` (fall back to normal waterfall)
   - dispute / C&D / attorney → standard routes
 
+The rerun amount is whatever declined before, not the current balance. If backend doesn't populate `last_payment_amount`, the node falls back to the normal waterfall instead of inventing a number.
+
 Redirected edge: `node_deliver_compliance.else_edge` now points to `node_post_compliance_branch` (was `node_opening_frame`). All other verified-identity paths unchanged; Mini-Miranda still delivered before the branch is evaluated.
+
+**Backend requirement:** On account lookup, populate the `last_payment_amount` dynamic variable with the dollar amount of the most recent declined transaction. Also set `status = "decline"` when that applies. `payment_decline_reason` is optional and used for caller-facing explanation if set.
 
 **Deploy requirement:** Retell's public API blocks PATCH on published flows. To apply `update_flow_v48.json`:
 1. Open the Retell dashboard for `conversation_flow_386d055c83ef` and click "Edit" (creates an unpublished draft).
